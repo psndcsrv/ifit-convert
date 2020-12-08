@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TcxFile {
@@ -66,8 +68,11 @@ public class TcxFile {
     }
 
     public void setActivitySport(String sport) {
-        ((Element) document.selectSingleNode(String.format("//%s", xpathFor("Activity"))))
-                .addAttribute("Sport", sport);
+        Element activity = (Element) document.selectSingleNode(String.format("//%s", xpathFor("Activity")));
+
+        LOG.info("Setting {} Sport: {} -> {}", activity.getPath(), activity.attributeValue("Sport"), sport);
+
+        activity.addAttribute("Sport", sport);
     }
 
     public void fixIntegerValues() {
@@ -87,7 +92,11 @@ public class TcxFile {
             Node lastTrackpoint = trackPoints.get(trackPoints.size()-1);
             String furthestDistance = lastTrackpoint.selectSingleNode(xpathFor("DistanceMeters")).getText();
 
-            node.selectSingleNode(xpathFor("DistanceMeters")).setText(furthestDistance);
+            Node lapDistanceMeters = node.selectSingleNode(xpathFor("DistanceMeters"));
+
+            LOG.info("Setting {}: {} -> {}", lapDistanceMeters.getPath(), lapDistanceMeters.getText(), furthestDistance);
+
+            lapDistanceMeters.setText(furthestDistance);
         });
     }
 
@@ -111,12 +120,53 @@ public class TcxFile {
     private void roundValue(Node node) {
         BigDecimal value = new BigDecimal(node.getStringValue());
         value = value.setScale(0, RoundingMode.HALF_UP);
-        node.setText(value.toBigInteger().toString());
+        String newValue = value.toBigInteger().toString();
+
+        LOG.info("Rounded {}: {} -? {}", node.getPath(), node.getText(), newValue);
+
+        node.setText(newValue);
     }
 
     String xpathFor(String... parts) {
         return Arrays.stream(parts)
                 .map(part -> String.format("*[local-name() = '%s']", part))
                 .collect(Collectors.joining("/"));
+    }
+
+    public void smoothTrackpoints(Map<Instant, Point> distancesByTime) {
+        getLaps().forEach(node -> {
+            List<Node> trackPoints = getTrackpoints(node);
+
+            Instant timestamp;
+            Instant prevTimestamp = null;
+            Node distance;
+            Duration durationSincePreviousPoint = Duration.ofSeconds(0);
+            BigDecimal totalDistance = BigDecimal.ZERO;
+            for (Node trackPoint : trackPoints) {
+                timestamp = getTrackpointTimestamp(trackPoint);
+
+                Point point = distancesByTime.get(timestamp);
+
+                if (point == null) {
+                    LOG.error("Failed to find real point for timestamp: {}", timestamp);
+                } else {
+                    if (prevTimestamp != null) {
+                        durationSincePreviousPoint = Duration.between(prevTimestamp, timestamp);
+                    }
+
+                    distance = trackPoint.selectSingleNode(xpathFor("DistanceMeters"));
+                    BigDecimal metersForDuration = point.getMetersForDuration(durationSincePreviousPoint);
+                    totalDistance = totalDistance.add(metersForDuration);
+
+                    LOG.info("Setting trackpoint distance {}: {} -> {} (+{} = {})",
+                            timestamp, distance.getText(), point.getMeters().toString(),
+                            metersForDuration, totalDistance);
+
+                    distance.setText(totalDistance.toString());
+
+                    prevTimestamp = timestamp;
+                }
+            }
+        });
     }
 }

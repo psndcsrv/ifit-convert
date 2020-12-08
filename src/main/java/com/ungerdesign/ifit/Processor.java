@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 
@@ -39,8 +38,8 @@ public class Processor {
         Instant startTimestamp = tcxFile.getStartTimestamp();
         LOG.info("First trackpoint timestamp: {}", startTimestamp);
 
-        Map<Instant, BigDecimal> distancesByTime = csvFile.getDistancesInMetersByTime(startTimestamp);
+        Map<Instant, Point> distancesByTime = csvFile.getPointsByTime(startTimestamp);
 
-        // TODO
+        tcxFile.smoothTrackpoints(distancesByTime);
     }
 }
