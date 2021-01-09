@@ -14,11 +14,14 @@ public class Application {
     public static void main(String[] args) {
         LOG.info("Got arguments: {}", (Object) args);
 
-        if (args.length > 1) {
-            throw new RuntimeException("Only one argument allowed -- the tcx or csv filename to be converted");
+        if (args.length > 2) {
+            throw new RuntimeException("Only two arguments allowed -- the sport, and the tcx or csv filename to be converted");
+        } else if (args.length < 2) {
+            throw new RuntimeException("Two arguments required -- the sport, and the tcx or csv filename to be converted");
         }
 
-        String filename = args[0];
+        Sport sport = Sport.lookup(args[0]);
+        String filename = args[1];
         String lowercaseFilename = filename.toLowerCase(Locale.ROOT);
 
         File csvFile;
@@ -47,7 +50,7 @@ public class Application {
         }
 
         try {
-            Processor p = new Processor(tcxFile, csvFile);
+            Processor p = new Processor(tcxFile, csvFile, sport);
             String output = p.process();
             FileUtils.writeStringToFile(FileUtils.getFile(tcxFilename.replace(".tcx", "-new.tcx")), output, StandardCharsets.UTF_8);
         } catch (Throwable t) {

@@ -12,10 +12,12 @@ public class Processor {
 
     private final TcxFile tcxFile;
     private final CsvFile csvFile;
+    private final Sport sport;
 
-    public Processor(File tcxFile, File csvFile) {
+    public Processor(File tcxFile, File csvFile, Sport sport) {
         this.tcxFile = new TcxFile(tcxFile);
         this.csvFile = new CsvFile(csvFile);
+        this.sport = sport;
     }
 
     public String process() {
@@ -29,7 +31,7 @@ public class Processor {
     }
 
     public void fixSummaryFields() {
-        tcxFile.setActivitySport("Running");
+        tcxFile.setActivitySport(sport.getTypeValue());
         tcxFile.fixIntegerValues();
         tcxFile.fixLapDistances();
     }
