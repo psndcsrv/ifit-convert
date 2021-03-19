@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 public class Application {
@@ -21,7 +23,27 @@ public class Application {
         }
 
         Sport sport = Sport.lookup(args[0]);
-        String filename = args[1];
+        List<String> filenames = Arrays.asList(args[1].split(" "));
+
+        LOG.info("Got files ({}): {}", filenames.size(), filenames);
+
+        boolean hasErrors = false;
+
+        for (String filename : filenames) {
+            try {
+                handleFile(sport, filename);
+            } catch (RuntimeException e) {
+                LOG.error("Failed to process file: {}", filename, e);
+                hasErrors = true;
+            }
+        }
+
+        if (hasErrors) {
+            System.exit(1);
+        }
+    }
+
+    private static void handleFile(Sport sport, String filename) {
         String lowercaseFilename = filename.toLowerCase(Locale.ROOT);
 
         File csvFile;
