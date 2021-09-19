@@ -15,7 +15,6 @@ public class TcxFileTest {
     public void testGetTrackpoints() throws Exception {
         TcxFile file = new TcxFile(new File(getClass().getResource("/test.tcx").getFile()));
 
-        file.parse();
         List<Node> elements = file.getTrackpoints();
         assertThat(elements).hasSize(2458);
     }
@@ -24,7 +23,6 @@ public class TcxFileTest {
     public void testGetStartTimestamp() throws Exception {
         TcxFile file = new TcxFile(new File(getClass().getResource("/test.tcx").getFile()));
 
-        file.parse();
         Instant startTimestamp = file.getStartTimestamp();
         assertThat(startTimestamp).isEqualTo("2020-12-05T18:43:31.207Z");
     }

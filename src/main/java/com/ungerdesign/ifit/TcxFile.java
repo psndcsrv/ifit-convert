@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -16,27 +17,41 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TcxFile {
     public static final Logger LOG = LoggerFactory.getLogger(TcxFile.class);
 
-    private boolean parsed = false;
     private final File originalFile;
+    private final InputStream originalStream;
+    private boolean parsed = false;
 
     private Document document;
 
     public TcxFile(File tcxFile) {
         originalFile = tcxFile;
+        originalStream = null;
 
         parse();
     }
 
-    public synchronized void parse() {
+    public TcxFile(InputStream tcxStream) {
+        originalStream = tcxStream;
+        originalFile = null;
+
+        parse();
+    }
+
+    private synchronized void parse() {
         if (!parsed) {
             try {
                 SAXReader reader = new SAXReader();
-                document = reader.read(originalFile);
+                if (Objects.nonNull(originalStream)) {
+                    document = reader.read(originalStream);
+                } else {
+                    document = reader.read(originalFile);
+                }
 
                 parsed = true;
             } catch (DocumentException e) {

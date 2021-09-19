@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.ungerdesign.ifit.CsvFile.Headers.*;
@@ -20,12 +21,21 @@ public class CsvFile {
     public static final Logger LOG = LoggerFactory.getLogger(CsvFile.class);
 
     private final File originalFile;
-
-    private final List<Point> points = new ArrayList<>();
+    private final InputStream originalStream;
     private boolean parsed = false;
 
+    private final List<Point> points = new ArrayList<>();
+
     public CsvFile(File csvFile) {
-        this.originalFile = csvFile;
+        originalFile = csvFile;
+        originalStream = null;
+
+        parse();
+    }
+
+    public CsvFile(InputStream csvStream) {
+        originalStream = csvStream;
+        originalFile = null;
 
         parse();
     }
@@ -39,7 +49,12 @@ public class CsvFile {
             try {
                 points.clear();
 
-                Reader in = new BufferedReader(new FileReader(originalFile));
+                Reader in;
+                if (Objects.nonNull(originalFile)) {
+                    in = new BufferedReader(new FileReader(originalFile));
+                } else {
+                    in = new InputStreamReader(originalStream);
+                }
 
                 Iterable<CSVRecord> records = CSVFormat.DEFAULT
                         .withHeader(Headers.class)
