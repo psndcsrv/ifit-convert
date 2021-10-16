@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Map;
 
@@ -17,6 +18,12 @@ public class Processor {
     public Processor(File tcxFile, File csvFile, Sport sport) {
         this.tcxFile = new TcxFile(tcxFile);
         this.csvFile = new CsvFile(csvFile);
+        this.sport = sport;
+    }
+
+    public Processor(InputStream tcxStream, InputStream csvStream, Sport sport) {
+        this.tcxFile = new TcxFile(tcxStream);
+        this.csvFile = new CsvFile(csvStream);
         this.sport = sport;
     }
 
